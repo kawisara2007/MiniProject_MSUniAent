@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uni-Agent มหาวิทยาลัยมหาสารคาม (MSU)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="msu-header">
+            <h1>🤖 Uni-Agent (MSU)</h1>
+            <p>ระบบผู้ช่วย AI อัจฉริยะ มหาวิทยาลัยมหาสารคาม</p>
+        </header>
+
+        <section class="security-panel">
+            <h3>🔑 ยืนยันตัวตนนิสิต (Security Login)</h3>
+            <div class="input-group">
+                <label for="student-id">กรอกรหัสนิสิตจำลอง:</label>
+                <input type="text" id="student-id" value="">
+            </div>
+            <p class="security-note">* ระบบใช้สิทธิ์ Read-Only ดึงข้อมูลอย่างปลอดภัย ไม่มีการบันทึกรหัสผ่าน</p>
+        </section>
+
+        <section class="chat-container">
+            <div class="chat-box" id="chat-box">
+                <div class="message ai-message">
+                    🤖 <strong>Uni-Agent:</strong> ยินดีต้อนรับนิสิต มมส ครับ! ลองถามเรื่องเกรด, เวลาปิดห้องสมุด หรือตารางรถรางได้เลยครับ
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" id="user-input" placeholder="พิมพ์คำถามของคุณที่นี่...">
+                <button id="send-btn">ส่งคำถาม</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // 🔗 จุดเชื่อมต่อสำคัญ (API Connection): ส่งข้อความจากหน้าบ้านไปหาหลังบ้าน Python
+        document.getElementById('send-btn').addEventListener('click', async function() {
+            let inputField = document.getElementById('user-input');
+            let chatBox = document.getElementById('chat-box');
+            let studentId = document.getElementById('student-id').value;
+            let userText = inputField.value.trim();
+
+            if (userText === "") return;
+
+            // 1. แสดงข้อความของนิสิตบนหน้าจอทันที
+            chatBox.innerHTML += `<div class="message user-message">👨‍🎓 <strong>คุณ:</strong> ${userText}</div>`;
+            inputField.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // 2. ยิง API ยื่นข้อมูลไปให้หลังบ้าน Python (backend.py) ประมวลผล
+                let response = await fetch(`http://127.0.0.1:8000/api/chat?student_id=${studentId}&question=${encodeURIComponent(userText)}`);
+                let data = await response.json();
+
+                // 3. นำคำตอบที่ผ่านระบบความปลอดภัยจากหลังบ้านมาแสดงผลบนหน้าจอแชท
+                chatBox.innerHTML += `<div class="message ai-message">🤖 <strong>Uni-Agent:</strong> ${data.answer}</div>`;
+            } catch (error) {
+                chatBox.innerHTML += `<div class="message ai-message" style="color:red;">❌ ไม่สามารถเชื่อมต่อระบบหลังบ้าน Python ได้ (กรุณารัน backend.py)</div>`;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    </script>
+</body>
+</html>
