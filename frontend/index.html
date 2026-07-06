@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uni-Agent | MSU </title>
+    <title>Uni-Agent | MSU Premium Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
@@ -11,20 +11,25 @@
     
     <div class="main-layout">
         
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-top">
-                <div class="menu-btn">☰</div>
-                <button class="new-chat-btn">➕ แชทใหม่</button>
+                <div class="sidebar-brand">
+                    <span class="brand-icon">🏛️</span>
+                    <span class="brand-text">Uni-Agent</span>
+                </div>
+                
+                <button class="new-chat-btn">➕ New Chat</button>
+                
                 <div class="history-list">
-                    <p class="history-item">💬 เช็คเกรดเทอมล่าสุด</p>
-                    <p class="history-item">💬 เวลาเปิดห้องสมุด</p>
-                    <p class="history-item">💬 สอบถามเรื่องทุนการศึกษา</p>
+                    <div class="history-item">💬 เกรดเฉลี่ยสะสม</div>
+                    <div class="history-item">💬 เวลาเปิดห้องสมุด</div>
+                    <div class="history-item">💬 สอบถามเรื่องทุน</div>
                 </div>
             </div>
             
             <div class="sidebar-bottom">
                 <div class="profile-card">
-                    <div class="profile-avatar">👨‍🎓</div>
+                    <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" class="profile-avatar-img" alt="User" id="user-avatar">
                     <div class="profile-info">
                         <span id="display-name">บุคคลทั่วไป</span>
                         <small id="display-status">ยังไม่ได้เข้าสู่ระบบ</small>
@@ -35,19 +40,26 @@
 
         <div class="app-container">
             <header class="top-nav">
-                <div class="logo">
-                    <span class="sparkle">✨</span> Uni-Agent <span class="badge">MSU Premium</span>
+                <div class="nav-left">
+                    <div class="menu-btn" id="toggle-sidebar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="logo">
+                        <span class="sparkle">✨</span> Uni-Agent MSU <span class="premium-text">Premium</span>
+                    </div>
                 </div>
                 <div class="auth-section">
                     <button id="login-btn" class="auth-btn">🔐 เข้าสู่ระบบทะเบียน มมส</button>
+                    <button id="theme-toggle" class="icon-btn">🌙</button>
                 </div>
             </header>
 
             <main class="chat-area" id="chat-box">
                 <div class="message ai-message">
-                    <div class="avatar ai-avatar">✨</div>
                     <div class="message-content">
-                        สวัสดีครับ! ผมคือ <b>Uni-Agent</b> ผู้ช่วยอัจฉริยะประจำมหาวิทยาลัยมหาสารคาม วันนี้มีข้อมูลอะไรให้ผมช่วยค้นหาไหมครับ? (แนะนำให้กดเชื่อมต่อระบบทะเบียนด้านบน เพื่อเปิดสิทธิ์เช็คเกรดส่วนตัวครับ)
+                        สวัสดีครับ! ผมคือ Uni-Agent ผู้ช่วยประจำมหาวิทยาลัยมหาสารคาม วันนี้มีข้อมูลอะไรให้ผมช่วยค้นหาไหมครับ?
                     </div>
                 </div>
             </main>
@@ -61,8 +73,8 @@
                         </svg>
                     </button>
                 </div>
-                <div class="disclaimer">
-                    Uni-Agent | MSU อาจแสดงข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญกับประกาศทางการของมหาวิทยาลัยอีกครั้ง
+                <div class="disclaimer-text">
+                    Uni-Agent | ระบบผู้ช่วยอัจฉริยะ อาจแสดงข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบกับประกาศทางการอีกครั้ง
                 </div>
             </footer>
         </div>
@@ -73,72 +85,91 @@
             <div class="modal-icon">🏛️</div>
             <h2>ระบบยืนยันตัวตนนิสิต มมส.</h2>
             <p>กรุณาระบุรหัสนิสิตเพื่อดึงข้อมูลเกรดและประวัติจากฐานข้อมูลกลาง</p>
-            <input type="text" id="student-id-input" placeholder="กรอกรหัสนิสิต (เช่น 69000000 )">
+            <input type="text" id="student-id-input" placeholder="กรอกรหัสนิสิต (เช่น 69102345)">
             <div class="modal-actions">
                 <button id="cancel-login">ยกเลิก</button>
-                <button id="confirm-login">ยืนยันการเข้าสู่ระบบ</button>
+                <button id="confirm-login">ยืนยัน</button>
             </div>
         </div>
     </div>
 
     <script>
-        // กำหนดค่าเริ่มต้นรหัสนิสิต (เริ่มต้นเป็นรหัสจำลองตัวแรกก่อน)
-        let currentStudentId = "69102345"; 
+        let currentStudentId = "GUEST"; 
 
         const loginBtn = document.getElementById('login-btn');
         const loginModal = document.getElementById('login-modal');
         const cancelLogin = document.getElementById('cancel-login');
         const confirmLogin = document.getElementById('confirm-login');
 
-        // --- ควบคุมหน้าต่าง Pop-up ล็อกอิน ---
+        // Toggle Sidebar
+        document.getElementById('toggle-sidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        // Dark Mode
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            themeToggle.innerText = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+        });
+
+        // Login Logic
         loginBtn.addEventListener('click', () => { loginModal.style.display = 'flex'; });
         cancelLogin.addEventListener('click', () => { loginModal.style.display = 'none'; });
 
-        // ยืนยันการเปลี่ยนรหัส / ล็อกอิน
         confirmLogin.addEventListener('click', () => {
             const inputId = document.getElementById('student-id-input').value.trim();
             if (inputId !== "") {
-                currentStudentId = inputId; // เปลี่ยนรหัสที่ใช้ยิง API หลังบ้าน
+                currentStudentId = inputId;
                 
-                // 1. อัปเดตข้อมูลการแสดงผลที่ Profile Card ซ้ายล่าง
-                document.getElementById('display-name').innerText = "นิสิตรหัส: " + inputId;
+                // อัปเดตข้อมูลโปรไฟล์ที่มุมซ้ายล่าง
+                document.getElementById('display-name').innerText = "นายสมชาย (นิสิต มมส)"; // จำลองชื่อ
                 document.getElementById('display-status').innerText = "✅ เชื่อมต่อระบบทะเบียนแล้ว";
-                loginBtn.innerText = "🔄 เปลี่ยนบัญชีนิสิต";
+                document.getElementById('display-status').style.color = "#34A853";
                 
-                // 2. 🌟 [ฟังก์ชันเคลียร์แชทเก่า]: รีเซ็ตข้อความบนหน้าจอทันทีเมื่อเปลี่ยนคนล็อกอิน
+                // เปลี่ยนรูปโปรไฟล์ในเมนูซ้ายเป็นรูปหนุ่มหล่อตามเรฟ
+                document.getElementById('user-avatar').src = "https://i.pinimg.com/736x/8b/16/7a/8b167af653c2399dd93b952a48740620.jpg"; 
+                
+                loginBtn.innerHTML = "🔄 สลับบัญชี";
+                
                 document.getElementById('chat-box').innerHTML = `
                     <div class="message ai-message">
-                        <div class="avatar ai-avatar">✨</div>
                         <div class="message-content">
-                            <b>สลับบัญชีผู้ใช้สำเร็จ!</b> ยินดีต้อนรับนิสิตรหัส <code>${inputId}</code> เข้าสู่ระบบความปลอดภัยกลาง มมส. <br>คุณสามารถพิมพ์ถามเรื่องเกรด หรือข้อมูลข่าวสารของตนเองได้เลยครับ คับ
+                            เข้าสู่ระบบสำเร็จ ยินดีต้อนรับนิสิตรหัส ${inputId} ครับ พิมพ์ถามเรื่องเกรดหรือข้อมูลส่วนตัวได้เลยครับ.
                         </div>
                     </div>
                 `;
-                
-                document.getElementById('student-id-input').value = ""; // เคลียร์ช่องพิมพ์ใน modal
-                loginModal.style.display = 'none'; // ปิดหน้าต่าง Pop-up
+                document.getElementById('student-id-input').value = "";
+                loginModal.style.display = 'none';
             }
         });
 
-        // --- ฟังก์ชันปุ่มแชทใหม่ (New Chat) สำหรับล้างข้อมูลหน้าจอ ---
+        // New Chat
         document.querySelector('.new-chat-btn').addEventListener('click', () => {
             document.getElementById('chat-box').innerHTML = `
                 <div class="message ai-message">
-                    <div class="avatar ai-avatar">✨</div>
-                    <div class="message-content">เริ่มการสนทนาใหม่แล้วครับ มีข้อมูลส่วนไหนของ มมส ที่อยากให้ผมช่วยเหลือเพิ่มเติมไหมครับ?</div>
+                    <div class="message-content">เริ่มการสนทนาใหม่แล้วครับ มีอะไรให้ผมช่วยไหมครับ?</div>
                 </div>
             `;
         });
 
-        // --- ระบบส่งข้อความคุยกับ API หลังบ้าน ---
+        // Click History
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const text = e.target.innerText.replace('💬 ', ''); 
+                document.getElementById('user-input').value = text;
+                document.getElementById('send-btn').click(); 
+            });
+        });
+
+        // Send Message
         document.getElementById('send-btn').addEventListener('click', async function() {
             let inputField = document.getElementById('user-input');
             let chatBox = document.getElementById('chat-box');
             let userText = inputField.value.trim();
-
             if (userText === "") return;
 
-            // แสดงข้อความฝั่งผู้ใช้ (ชิดขวา)
+            // ข้อความ User
             chatBox.innerHTML += `
                 <div class="message user-message">
                     <div class="message-content">${userText}</div>
@@ -148,33 +179,27 @@
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                // ยิง API โดยแนบรหัสนิสิตล่าสุด (currentStudentId) ที่ได้จากการล็อกอินไปด้วย
                 let response = await fetch(`http://127.0.0.1:8000/api/chat?student_id=${currentStudentId}&question=${encodeURIComponent(userText)}`);
                 let data = await response.json();
                 
-                // แสดงข้อความตอบกลับจาก AI Agent
+                // ข้อความ AI
                 chatBox.innerHTML += `
                     <div class="message ai-message">
-                        <div class="avatar ai-avatar">✨</div>
                         <div class="message-content">${data.answer}</div>
                     </div>
                 `;
             } catch (error) {
                 chatBox.innerHTML += `
                     <div class="message ai-message error">
-                        <div class="avatar ai-avatar">⚠️</div>
-                        <div class="message-content">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์หลังบ้านได้ กรุณาตรวจสอบการเปิดรันไฟล์ Backend</div>
+                        <div class="message-content">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>
                     </div>
                 `;
             }
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        // กดปุ่ม Enter เพื่อส่งข้อความได้
         document.getElementById('user-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                document.getElementById('send-btn').click();
-            }
+            if (e.key === 'Enter') document.getElementById('send-btn').click();
         });
     </script>
 </body>

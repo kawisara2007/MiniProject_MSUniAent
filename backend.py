@@ -5,7 +5,6 @@ import os
 
 app = FastAPI(title="Uni-Agent MSU High-Stability Backend")
 
-# ปลดล็อกระบบรักษาความปลอดภัยเพื่อให้ Frontend HTML คุยกับ Backend ได้
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,12 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==============================================================================
-# [ส่วนดึงข้อมูล: ดึงข้อมูลจากไฟล์ JSON ได้จริง ๆ และอัปเดตได้เรียลไทม์]
-# ==============================================================================
 def load_mock_data():
     try:
-        # วิ่งไปอ่านไฟล์ในโฟลเดอร์ mock_data สดๆ ทุกครั้งที่มีนิสิตพิมพ์ข้อความถาม
         with open(os.path.join("mock_data", "student_profiles.json"), "r", encoding="utf-8") as f:
             students = json.load(f)
         with open(os.path.join("mock_data", "msu_knowledge.json"), "r", encoding="utf-8") as f:
@@ -28,50 +23,46 @@ def load_mock_data():
     except Exception:
         return {}, {}
 
-# ==============================================================================
-# [ส่วนควบคุมการตัดสินใจประมวลผลคำตอบ]
-# ==============================================================================
 @app.get("/api/chat")
 def chat_with_agent(student_id: str, question: str):
     student_db, knowledge_db = load_mock_data()
     q_clean = question.lower().strip()
     
-    # 🛡️ เลเยอร์ความปลอดภัยขาเข้า (Input Guardrail)
+    # 🛡️ Guardrail 1: คำสั่งอันตราย
     dangerous_keywords = ["ลบข้อมูลมหาลัย", "แฮก", "drop table", "shutdown"]
     if any(keyword in q_clean for keyword in dangerous_keywords):
-        return {"answer": "🛡️ [ระบบความปลอดภัย]: พฤติกรรมเสี่ยงต่อการโจมตีระบบฐานข้อมูลกลาง การทำงานถูกระงับ!"}
+        return {"answer": "ระบบความปลอดภัย: ตรวจพบพฤติกรรมเสี่ยง การทำงานถูกระงับครับ"}
 
-    # ค้นหาประวัตินิสิตตามรหัสที่ส่งมาจากหน้าบ้านล่าสุด
-    current_student = student_db.get(student_id)
-
-    # 🧠 สมองกล Agent ดึงข้อมูลแบบตรงเงื่อนไขและชาญฉลาด
-    
-    # สายคำถามที่ 1: ค้นหาเรื่องเกรด / GPA / ประวัติการเรียนส่วนตัว
-    if "เกรด" in q_clean or "gpa" in q_clean or "คะแนน" in q_clean or "ประวัติ" in q_clean or "คะแนนสะสม" in q_clean:
+    # 🛡️ Guardrail 2: ตรวจสอบการล็อกอินก่อนให้ข้อมูลส่วนตัว
+    is_personal_query = any(k in q_clean for k in ["เกรด", "gpa", "คะแนน", "ประวัติ", "สะสม"])
+    if is_personal_query:
+        if not student_id or student_id == "GUEST":
+            return {"answer": "แจ้งเตือน: คุณยังไม่ได้เข้าสู่ระบบครับ รบกวนกดปุ่ม 'เข้าสู่ระบบทะเบียน มมส' ด้านบนก่อน เพื่อให้ผมดึงข้อมูลส่วนตัวมาแสดงได้อย่างปลอดภัยครับ"}
+        
+        current_student = student_db.get(student_id)
         if current_student:
             return {
-                "answer": f"MSU : สวัสดีครับคุณ **{current_student['name']}** คณะ **{current_student['faculty']}** คับ จากการตรวจสอบข้อมูลทะเบียนล่าสุด เกรดเฉลี่ยสะสม (GPAX) ปัจจุบันของคุณคือ **{current_student['gpa']}** (สถานภาพนิสิต: {current_student['status']}) ครับ!"
+                "answer": f"สวัสดีครับคุณ {current_student['name']} คณะ{current_student['faculty']} จากการตรวจสอบข้อมูลทะเบียนล่าสุด เกรดเฉลี่ยสะสมปัจจุบันของคุณคือ {current_student['gpa']} (สถานภาพ: {current_student['status']}) ครับ"
             }
         else:
-            return {"answer": f"MSU : ปัจจุบันคุณล็อกอินด้วยรหัสนิสิต `{student_id}` ซึ่งไม่พบในระบบฐานข้อมูลทะเบียนจำลองครับ (แนะนำให้ทดลองกดเข้าสู่ระบบด้วยรหัส: `69102345` หรือ `69109999` ดูนะครับ)"}
+            return {"answer": f"ไม่พบรหัสนิสิต {student_id} ในระบบฐานข้อมูลครับ"}
 
-    # สายคำถามที่ 2: ดึงข้อมูลระเบียบการจากไฟล์ msu_knowledge.json ตาม Keyword
-    elif "ห้องสมุด" in q_clean or "วิทยบริการ" in q_clean or "สมุด" in q_clean:
+    # 🧠 สายคำถามที่ 2: ข้อมูลทั่วไป (ตอบได้แม้ไม่ล็อกอิน)
+    if "ห้องสมุด" in q_clean or "วิทยบริการ" in q_clean or "สมุด" in q_clean:
         info = knowledge_db.get("ห้องสมุด", "ไม่มีข้อมูลในระบบ")
-        return {"answer": f"MSU : ตรวจสอบข้อมูลสำนักวิทยบริการ มมส ให้เรียบร้อยแล้วครับ: {info}"}
+        return {"answer": f"ข้อมูลสำนักวิทยบริการ มมส: {info}"}
 
     elif "ทุน" in q_clean or "กยศ" in q_clean or "เงินกู้" in q_clean:
         info = knowledge_db.get("ทุนการศึกษา", "ไม่มีข้อมูลในระบบ")
-        return {"answer": f"MSU : ข้อมูลเรื่องทุนการศึกษาของทางมหาวิทยาลัยคับ: {info}"}
+        return {"answer": f"ข้อมูลเรื่องทุนการศึกษา: {info}"}
 
     elif "รถราง" in q_clean or "รถเหลือง" in q_clean or "รถม่วง" in q_clean:
         info = knowledge_db.get("รถราง", "ไม่มีข้อมูลในระบบ")
-        return {"answer": f"MSU: แผนเส้นทางบริการเดินรถรางภายใน มมส คับ: {info}"}
+        return {"answer": f"เส้นทางบริการเดินรถภายใน มมส: {info}"}
 
-    # สายคำถามที่ 3: หากถามนอกเหนือเรื่องที่กำหนดไว้
     else:
         return {
-            "answer": " MSU : ขออภัยครับ ปัจจุบันยังไม่มีข้อมูลเรื่องนี้ในคลังความรู้ต้นแบบ มมส ท่านสามารถเพิ่มหัวข้อข่าวสารนี้เข้าไปในไฟล์คลังข้อมูล `mock_data/msu_knowledge.json` ได้ตลอดเวลาเลยครับ คับ"
+            "answer": "ขออภัยครับ ปัจจุบันยังไม่มีข้อมูลเรื่องนี้ในคลังความรู้ต้นแบบครับ"
         }
 
 if __name__ == "__main__":
